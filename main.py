@@ -2,8 +2,25 @@ from tkinter import *
 from tkinter import messagebox
 import random
 import pyperclip
+import json
 
 COR_AZUL = "#24ffff"
+
+
+# ---------------------------- PROCURAR EMAIL E SENHA ------------------------------- #
+def encontrar_senha():
+	capturar_site = site_entrada.get()
+	try:
+		with open("dados.json", "r") as dados:
+			obtendo_dados = json.load(dados)
+			if capturar_site not in obtendo_dados:
+				messagebox.showwarning(title="Alerta", message=f"{capturar_site} não está cadastrado")
+			else:
+				email = obtendo_dados[capturar_site]["email"]
+				senha = obtendo_dados[capturar_site]["senha"]
+				messagebox.showinfo(title="Dados do Cliente", message=f"Email: {email}\nSenha: {senha}")
+	except FileNotFoundError:
+		messagebox.showwarning(title="Alerta", message="Nenhum site cadastrado ainda")
 
 
 # ---------------------------- GERADOR DE SENHAS ------------------------------- #
@@ -40,19 +57,29 @@ def salvar():
 	capturar_site = site_entrada.get()
 	capturar_email = email_entrada.get()
 	capturar_senha = senha_entrada.get()
+
+	novos_dados = {capturar_site: {
+		"email": capturar_email,
+		"senha": capturar_senha
+	}}
+
 	if capturar_site == "" or capturar_email == "" or capturar_senha == "":
 		messagebox.showwarning(title="Alerta", message="Por favor não deixe campos em branco")
 	else:
-		salvar_true = messagebox.askokcancel(
-			title="Dados digitados",
-			message=f"Site: {capturar_site}\nEmail/Usuário: {capturar_email}\nSenha: {capturar_senha}"
-		)
-		if salvar_true:
-			with open("dados.txt", "a") as dados:
-				dados.write(f"Site: {capturar_site} | Email/Usuário: {capturar_email} | Senha: {capturar_senha} \n")
-				site_entrada.delete(0, END)
-				email_entrada.delete(0, END)
-				senha_entrada.delete(0, END)
+		try:
+			with open("dados.json", "r") as dados:
+				carregando_dados = json.load(dados)
+				carregando_dados.update(novos_dados)
+		except FileNotFoundError:
+			with open("dados.json", "w") as dados:
+				json.dump(novos_dados, dados, indent=4)
+		else:
+			with open("dados.json", "w") as dados:
+				json.dump(carregando_dados, dados, indent=4)
+		finally:
+			site_entrada.delete(0, END)
+			email_entrada.delete(0, END)
+			senha_entrada.delete(0, END)
 
 
 # ---------------------------- INTERFACE GRÁFICA ------------------------------- #
@@ -78,15 +105,23 @@ senha_texto = Label(text="Senha:", font=("Courier", 13, "normal"), bg=COR_AZUL)
 senha_texto.grid(row=3, column=0)
 
 # Entrys
-site_entrada = Entry(width=40, font=("Courier", 15, "normal"))
-site_entrada.grid(row=1, column=1, columnspan=2, pady=10)
+site_entrada = Entry(width=30, font=("Courier", 15, "normal"))
+site_entrada.grid(row=1, column=1, pady=10)
 site_entrada.focus()
-email_entrada = Entry(width=40, font=("Courier", 15, "normal"))
+email_entrada = Entry(width=39, font=("Courier", 15, "normal"))
 email_entrada.grid(row=2, column=1, columnspan=2)
 senha_entrada = Entry(width=30, font=("Courier", 15, "normal"))
 senha_entrada.grid(row=3, column=1, pady=10)
 
 # Buttons
+procurar_button = Button(
+	text="Procurar",
+	font=("Courier", 10, "normal"),
+	bg="yellow",
+	width=12,
+	command=encontrar_senha
+)
+procurar_button.grid(row=1, column=2)
 gerar_senha = Button(
 	text="Gerar Senha",
 	font=("Courier", 10, "normal"),
